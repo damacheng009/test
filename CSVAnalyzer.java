@@ -32,20 +32,23 @@ public class CSVAnalyzer {
     }
 
     private static void analyzeSubFolder(File subFolder) throws IOException {
+        String folderName = subFolder.getName();
+        String dateVal = folderName.toLowerCase();  // Assuming folder name is in lowercase
+
         File[] csvFiles = subFolder.listFiles((dir, name) -> name.toLowerCase().endsWith(".csv"));
         if (csvFiles != null) {
             Map<String, Map<String, Integer>> dateIdentifierCountMap = new HashMap<>();
 
             for (File csvFile : csvFiles) {
-                processCSVFile(csvFile, dateIdentifierCountMap);
+                processCSVFile(csvFile, dateVal, dateIdentifierCountMap);
             }
 
             // Output the result
             for (Map.Entry<String, Map<String, Integer>> entry : dateIdentifierCountMap.entrySet()) {
-                String valueDate = entry.getKey();
+                String currentDateVal = entry.getKey();
                 Map<String, Integer> identifierCountMap = entry.getValue();
 
-                System.out.println("Date: " + valueDate);
+                System.out.println("Date: " + currentDateVal);
                 for (Map.Entry<String, Integer> identifierCountEntry : identifierCountMap.entrySet()) {
                     String identifier = identifierCountEntry.getKey();
                     int count = identifierCountEntry.getValue();
@@ -56,7 +59,7 @@ public class CSVAnalyzer {
         }
     }
 
-    private static void processCSVFile(File csvFile, Map<String, Map<String, Integer>> dateIdentifierCountMap)
+    private static void processCSVFile(File csvFile, String dateVal, Map<String, Map<String, Integer>> dateIdentifierCountMap)
             throws IOException {
         try (BufferedReader reader = new BufferedReader(new FileReader(csvFile))) {
             String line;
@@ -65,14 +68,13 @@ public class CSVAnalyzer {
 
             while ((line = reader.readLine()) != null) {
                 String[] fields = line.split(",");
-                if (fields.length >= 8) {
+                if (fields.length >= 3) {
                     String ioField = fields[0].trim();
                     String identifierField = fields[2].trim();
-                    String valueDateField = fields[7].trim();
 
-                    if (isValidIdentifier(identifierField) && isValidValueDate(valueDateField)) {
+                    if (isValidIdentifier(identifierField)) {
                         dateIdentifierCountMap
-                                .computeIfAbsent(valueDateField, k -> new HashMap<>())
+                                .computeIfAbsent(dateVal, k -> new HashMap<>())
                                 .merge(identifierField, 1, Integer::sum);
                     }
                 }
@@ -82,9 +84,5 @@ public class CSVAnalyzer {
 
     private static boolean isValidIdentifier(String identifier) {
         return identifier.matches("fin\\.\\d{3}");
-    }
-
-    private static boolean isValidValueDate(String valueDate) {
-        return valueDate.matches("\\d{4}/\\d{2}/\\d{2}");
     }
 }
