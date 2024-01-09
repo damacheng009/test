@@ -23,7 +23,7 @@ public class CSVAnalyzer {
         }
 
         try (PrintWriter writer = new PrintWriter(new FileWriter(outputCsvPath))) {
-            writer.println("msg_create_date,msg_type,amount");
+            writer.println("msg_create_date,msg_type,IO,amount");
 
             File[] subFolders = rootFolder.listFiles(File::isDirectory);
             if (subFolders != null) {
@@ -41,7 +41,7 @@ public class CSVAnalyzer {
         String monthNumber = String.format("%02d", getMonthNumber(monthAbbreviation));
         String dayOfMonth = folderName.substring(3);
 
-        Map<String, Integer> identifierCountMap = new HashMap<>();
+        Map<String, Map<String, Integer>> identifierCountMap = new HashMap<>();
 
         File[] csvFiles = subFolder.listFiles((dir, name) -> name.toLowerCase().endsWith(".csv"));
         if (csvFiles != null) {
@@ -51,14 +51,19 @@ public class CSVAnalyzer {
         }
 
         // Output the result
-        for (Map.Entry<String, Integer> entry : identifierCountMap.entrySet()) {
+        for (Map.Entry<String, Map<String, Integer>> entry : identifierCountMap.entrySet()) {
             String identifier = entry.getKey();
-            int count = entry.getValue();
-            writer.println(formatOutputLine(year, monthNumber, dayOfMonth, identifier, count));
+            Map<String, Integer> ioCountMap = entry.getValue();
+
+            for (Map.Entry<String, Integer> ioCountEntry : ioCountMap.entrySet()) {
+                String io = ioCountEntry.getKey();
+                int count = ioCountEntry.getValue();
+                writer.println(formatOutputLine(year, monthNumber, dayOfMonth, identifier, io, count));
+            }
         }
     }
 
-    private static void processCSVFile(File csvFile, Map<String, Integer> identifierCountMap) throws IOException {
+    private static void processCSVFile(File csvFile, Map<String, Map<String, Integer>> identifierCountMap) throws IOException {
         try (BufferedReader reader = new BufferedReader(new FileReader(csvFile))) {
             // Skip the first line (metadata)
             reader.readLine();
@@ -67,10 +72,13 @@ public class CSVAnalyzer {
             while ((line = reader.readLine()) != null) {
                 String[] fields = line.split(",");
                 if (fields.length >= 3) {
+                    String ioField = fields[0].trim();
                     String identifierField = fields[2].trim();
 
                     if (isValidIdentifier(identifierField)) {
-                        identifierCountMap.merge(identifierField, 1, Integer::sum);
+                        identifierCountMap
+                                .computeIfAbsent(identifierField, k -> new HashMap<>())
+                                .merge(ioField, 1, Integer::sum);
                     }
                 }
             }
@@ -81,8 +89,8 @@ public class CSVAnalyzer {
         return identifier.matches("fin\\.\\d{3}");
     }
 
-    private static String formatOutputLine(String year, String monthNumber, String dayOfMonth, String identifier, int count) {
-        return year + "/" + monthNumber + "/" + dayOfMonth + "," + identifier + "," + count;
+    private static String formatOutputLine(String year, String monthNumber, String dayOfMonth, String identifier, String io, int count) {
+        return year + "/" + monthNumber + "/" + dayOfMonth + "," + identifier + "," + io + "," + count;
     }
 
     private static int getMonthNumber(String monthAbbreviation) {
