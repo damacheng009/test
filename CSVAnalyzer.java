@@ -60,12 +60,15 @@ public class CSVAnalyzer {
             throws IOException {
         try (BufferedReader reader = new BufferedReader(new FileReader(csvFile))) {
             String line;
+            // Skip the first line (metadata)
+            reader.readLine();
+
             while ((line = reader.readLine()) != null) {
                 String[] fields = line.split(",");
-                if (fields.length == 3) {
+                if (fields.length >= 8) {
                     String ioField = fields[0].trim();
-                    String identifierField = fields[1].trim();
-                    String valueDateField = fields[2].trim();
+                    String identifierField = fields[2].trim();
+                    String valueDateField = fields[7].trim();
 
                     if (isValidIdentifier(identifierField) && isValidValueDate(valueDateField)) {
                         dateIdentifierCountMap
