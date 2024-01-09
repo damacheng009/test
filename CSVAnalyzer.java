@@ -38,29 +38,38 @@ public class CSVAnalyzer {
         File[] csvFiles = subFolder.listFiles((dir, name) -> name.toLowerCase().endsWith(".csv"));
         if (csvFiles != null) {
             Map<String, Map<String, Integer>> dateIdentifierCountMap = new HashMap<>();
+            int totalPerDay = 0;
 
             for (File csvFile : csvFiles) {
-                processCSVFile(csvFile, dateVal, dateIdentifierCountMap);
+                int identifierCount = processCSVFile(csvFile, dateVal, dateIdentifierCountMap);
+                totalPerDay += identifierCount;
             }
 
             // Output the result
+            System.out.println("Date: " + dateVal);
             for (Map.Entry<String, Map<String, Integer>> entry : dateIdentifierCountMap.entrySet()) {
                 String currentDateVal = entry.getKey();
                 Map<String, Integer> identifierCountMap = entry.getValue();
 
-                System.out.println("Date: " + currentDateVal);
+                System.out.println("  Date: " + currentDateVal);
+                int totalForDate = 0;
                 for (Map.Entry<String, Integer> identifierCountEntry : identifierCountMap.entrySet()) {
                     String identifier = identifierCountEntry.getKey();
                     int count = identifierCountEntry.getValue();
-                    System.out.println("  Identifier: " + identifier + ", Count: " + count);
+                    System.out.println("    Identifier: " + identifier + ", Count: " + count);
+                    totalForDate += count;
                 }
-                System.out.println();
+                System.out.println("    Total for Date: " + totalForDate);
             }
+            System.out.println("Total Per Day: " + totalPerDay);
+            System.out.println();
         }
     }
 
-    private static void processCSVFile(File csvFile, String dateVal, Map<String, Map<String, Integer>> dateIdentifierCountMap)
+    private static int processCSVFile(File csvFile, String dateVal, Map<String, Map<String, Integer>> dateIdentifierCountMap)
             throws IOException {
+        int totalPerFile = 0;
+
         try (BufferedReader reader = new BufferedReader(new FileReader(csvFile))) {
             String line;
             // Skip the first line (metadata)
@@ -76,10 +85,13 @@ public class CSVAnalyzer {
                         dateIdentifierCountMap
                                 .computeIfAbsent(dateVal, k -> new HashMap<>())
                                 .merge(identifierField, 1, Integer::sum);
+                        totalPerFile++;
                     }
                 }
             }
         }
+
+        return totalPerFile;
     }
 
     private static boolean isValidIdentifier(String identifier) {
