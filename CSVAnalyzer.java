@@ -41,23 +41,13 @@ public class CSVAnalyzer {
         String monthNumber = String.format("%02d", getMonthNumber(monthAbbreviation));
         String dayOfMonth = folderName.substring(3);
 
-        int senderReceiverIndex = -1; // Initialize to an invalid index
-
-        // Find the index of Sender/Receiver field
-        File[] csvFiles = subFolder.listFiles((dir, name) -> name.toLowerCase().endsWith(".csv"));
-        if (csvFiles != null && csvFiles.length > 0) {
-            senderReceiverIndex = findSenderReceiverIndex(csvFiles[0]);
-        }
-
-        if (senderReceiverIndex == -1) {
-            System.err.println("Sender/Receiver field not found in CSV files.");
-            return;
-        }
-
         Map<String, Map<String, Map<String, Integer>>> identifierCountMap = new HashMap<>();
 
-        for (File csvFile : csvFiles) {
-            processCSVFile(csvFile, senderReceiverIndex, identifierCountMap);
+        File[] csvFiles = subFolder.listFiles((dir, name) -> name.toLowerCase().endsWith(".csv"));
+        if (csvFiles != null) {
+            for (File csvFile : csvFiles) {
+                processCSVFile(csvFile, identifierCountMap);
+            }
         }
 
         // Output the result
@@ -81,22 +71,16 @@ public class CSVAnalyzer {
         }
     }
 
-    private static int findSenderReceiverIndex(File csvFile) throws IOException {
-        try (BufferedReader reader = new BufferedReader(new FileReader(csvFile))) {
-            String[] headerFields = reader.readLine().split(",");
-            for (int i = 0; i < headerFields.length; i++) {
-                if (headerFields[i].equalsIgnoreCase("Sender/Receiver")) {
-                    return i;
-                }
-            }
-        }
-        return -1; // Not found
-    }
-
-    private static void processCSVFile(File csvFile, int senderReceiverIndex, Map<String, Map<String, Map<String, Integer>>> identifierCountMap) throws IOException {
+    private static void processCSVFile(File csvFile, Map<String, Map<String, Map<String, Integer>>> identifierCountMap) throws IOException {
         try (BufferedReader reader = new BufferedReader(new FileReader(csvFile))) {
             // Skip the first line (metadata)
-            reader.readLine();
+            String firstLine = reader.readLine();
+            String[] headers = firstLine.split(",");
+            int senderReceiverIndex = findSenderReceiverIndex(headers);
+            if (senderReceiverIndex == -1) {
+                System.err.println("Sender/Receiver column not found in CSV file: " + csvFile.getName());
+                return;
+            }
 
             String line;
             while ((line = reader.readLine()) != null) {
@@ -117,7 +101,32 @@ public class CSVAnalyzer {
         }
     }
 
+    private static int findSenderReceiverIndex(String[] headers) {
+        for (int i = 0; i < headers.length; i++) {
+            if (headers[i].trim().equalsIgnoreCase("Sender/Receiver")) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     private static boolean isValidIdentifier(String identifier) {
         return identifier.matches("fin\\.\\d{3}");
     }
 
+    private static String formatOutputLine(String year, String monthNumber, String dayOfMonth, String identifier, String io, String sender, String receiver, int count) {
+        return year + "/" + monthNumber + "/" + dayOfMonth + "," + identifier + "," + io + "," + count + "," + sender + "," + receiver;
+    }
+
+    private static int getMonthNumber(String monthAbbreviation) {
+        switch (monthAbbreviation) {
+            case "dec":
+                return 12;
+            case "jan":
+                return 1;
+            // Add more cases for other months if needed
+            default:
+                return 0;
+        }
+    }
+}
