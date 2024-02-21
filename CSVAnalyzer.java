@@ -79,10 +79,10 @@ public class CSVAnalyzer {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] fields = line.split(",");
-                if (fields.length >= 3) {
+                if (fields.length >= 29) {
                     String ioField = fields[0].trim();
                     String identifierField = fields[2].trim();
-                    String senderReceiverField = fields[7].trim();
+                    String senderReceiverField = fields[28].trim();
 
                     if (isValidIdentifier(identifierField)) {
                         identifierCountMap
